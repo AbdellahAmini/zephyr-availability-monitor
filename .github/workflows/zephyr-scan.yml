@@ -1,0 +1,81 @@
+name: Zephyr Availability Scan
+
+on:
+  schedule:
+    - cron: "17 10 * * *"
+      timezone: "Africa/Casablanca"
+    - cron: "17 16 * * *"
+      timezone: "Africa/Casablanca"
+
+  workflow_dispatch:
+    inputs:
+      scan_days:
+        description: "Number of days to scan"
+        required: false
+        default: "90"
+        type: string
+      dry_run:
+        description: "Run without sending Telegram alerts"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zephyr-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium --with-deps
+
+      - name: Run Zephyr scan
+        env:
+          ADHERENT_NUMBER: ${{ secrets.ADHERENT_NUMBER }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+          SCAN_DAYS: ${{ github.event.inputs.scan_days || '90' }}
+          STAY_LENGTHS_NIGHTS: "3,4"
+          MAX_CONCURRENCY: "4"
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          python -m app.main
+
+      - name: Commit dedupe state
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/seen.json || true
+          git diff --cached --quiet || git commit -m "Update seen availability state"
+          git push || true
+
+      - name: Upload debug artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: zephyr-debug
+          path: debug/
+          retention-days: 3

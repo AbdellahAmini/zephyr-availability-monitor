@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+debug/*
+!debug/.gitkeep
+playwright/.auth/
+*.log.playwright-mcp/
+/*.png
