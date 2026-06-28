@@ -1,4 +1,4 @@
-﻿name: Manual Zephyr Search
+name: Manual Zephyr Search
 
 on:
   workflow_dispatch:
@@ -109,6 +109,7 @@ jobs:
           MIN_REMAINING: ${{ inputs.min_remaining }}
           BREAKFAST_FILTER: ${{ inputs.breakfast_filter }}
           TELEGRAM_USE_COLOR_EMOJIS: "true"
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           if [ "${{ inputs.cities }}" != "all" ]; then
             echo "MANUAL_CITIES=${{ inputs.cities }}" >> "$GITHUB_ENV"
