@@ -1,0 +1,125 @@
+﻿name: Manual Zephyr Search
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Search start date YYYY-MM-DD"
+        required: true
+        default: "2026-07-01"
+        type: string
+      end_date:
+        description: "Search end date YYYY-MM-DD"
+        required: true
+        default: "2026-09-15"
+        type: string
+      cities:
+        description: "Cities: all, agadir, ifrane, targa, martil, mazagan, saidia, or comma-list"
+        required: true
+        default: "all"
+        type: string
+      stay_lengths:
+        description: "Night lengths, comma-separated"
+        required: true
+        default: "3,4"
+        type: string
+      max_price:
+        description: "Max MAD per night"
+        required: true
+        default: "350"
+        type: string
+      room_filter:
+        description: "Optional room text filter, example: Twin or F1"
+        required: false
+        default: ""
+        type: string
+      min_remaining:
+        description: "Optional minimum inventory remaining"
+        required: false
+        default: ""
+        type: string
+      breakfast_filter:
+        description: "Breakfast filter"
+        required: true
+        default: "any"
+        type: choice
+        options:
+          - any
+          - with
+          - without
+      dry_run:
+        description: "Print Telegram messages without sending"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-zephyr-search
+  cancel-in-progress: false
+
+jobs:
+  manual-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium --with-deps
+
+      - name: Run manual Zephyr search
+        env:
+          ADHERENT_NUMBER: ${{ secrets.ADHERENT_NUMBER }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+
+          DRY_RUN: ${{ inputs.dry_run }}
+          ENABLE_PUBLIC_PAGE_MONITOR: "false"
+          ENABLE_HOTEL_PAGE_MONITOR: "false"
+          ENABLE_QUEUE_MONITOR: "true"
+          ENABLE_BROWSER_BOOKING_SCAN: "true"
+
+          HEADLESS_BROWSER: "true"
+          BOOKING_WAIT_SECONDS: "60"
+          BOOKING_HOLD_BROWSER_OPEN_SECONDS: "0"
+
+          MANUAL_START_DATE: ${{ inputs.start_date }}
+          MANUAL_END_DATE: ${{ inputs.end_date }}
+          MANUAL_STAY_LENGTHS_NIGHTS: ${{ inputs.stay_lengths }}
+          MAX_PRICE_PER_NIGHT_MAD: ${{ inputs.max_price }}
+          PRICE_FILTER_PRICE_IS_TOTAL_STAY: "false"
+
+          ROOM_TEXT_FILTER: ${{ inputs.room_filter }}
+          MIN_REMAINING: ${{ inputs.min_remaining }}
+          BREAKFAST_FILTER: ${{ inputs.breakfast_filter }}
+          TELEGRAM_USE_COLOR_EMOJIS: "true"
+        run: |
+          if [ "${{ inputs.cities }}" != "all" ]; then
+            echo "MANUAL_CITIES=${{ inputs.cities }}" >> "$GITHUB_ENV"
+          fi
+
+          python tools/manual_scan.py
+
+      - name: Upload manual result JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-zephyr-results
+          path: data/manual_latest_scan_results.json
+          retention-days: 7

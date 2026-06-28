@@ -1,7 +1,8 @@
-httpx==0.*
+﻿httpx==0.*
 playwright==1.*
 python-dotenv==1.*
 tenacity==8.*
 pydantic==2.*
 pytest==8.*
 tzdata
+beautifulsoup4==4.*
