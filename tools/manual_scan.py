@@ -260,14 +260,12 @@ def build_telegram_messages(options: list[dict], params: dict, states: dict) -> 
         tag_details = "🟦 DETAILS"
         tag_city = "🏨"
         tag_bed = "🛏️"
-        tag_link = "🔗"
     else:
         tag_date = "[DATE]"
         tag_price = "[PRICE]"
         tag_details = "[DETAILS]"
         tag_city = "[CITY]"
         tag_bed = "[ROOM]"
-        tag_link = "[LINK]"
 
     max_price = env("MAX_PRICE_PER_NIGHT_MAD", "350")
     title = f"Zephyr manual search summary <= {max_price} MAD/night"
@@ -341,7 +339,6 @@ States:
                 nightly = option.get("price_per_night_mad")
                 remaining = option.get("remaining")
                 desc = str(option.get("description") or "")
-                url = str(option.get("booking_url") or option.get("source_url") or "")
 
                 price_line = price
 
@@ -360,9 +357,6 @@ States:
 
                 if desc:
                     lines.append(f"{tag_details}: {html.escape(desc)}")
-
-                if url:
-                    lines.append(f"{tag_link}: {html.escape(url)}")
 
     messages = []
     current = []
