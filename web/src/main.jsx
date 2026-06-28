@@ -80,7 +80,23 @@ function App() {
         }),
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        throw new Error(
+          [
+            "Vercel did not return JSON from /api/scan.",
+            `HTTP status: ${response.status}`,
+            "This usually means the API route is missing, Vercel root directory is wrong, or the deployment is stale.",
+            "",
+            "First response text:",
+            raw.slice(0, 700),
+          ].join("\n")
+        );
+      }
 
       if (!response.ok) {
         const parts = [
