@@ -83,7 +83,14 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Request failed");
+        const parts = [
+          data.error || "Request failed",
+          data.status ? `Status: ${data.status}` : "",
+          data.detail ? `Detail: ${data.detail}` : "",
+          data.hint ? `Hint: ${data.hint}` : "",
+        ].filter(Boolean);
+
+        throw new Error(parts.join("\n\n"));
       }
 
       setResult({
