@@ -85,6 +85,11 @@ def select_cities() -> list:
     if not raw:
         return list(CITIES)
 
+    raw_clean = raw.strip().lower()
+
+    if raw_clean in {"all", "*"}:
+        return list(CITIES)
+
     tokens = [item.strip().lower() for item in raw.replace(";", ",").split(",") if item.strip()]
     selected = [city for city in CITIES if any(city_matches(city, token) for token in tokens)]
 

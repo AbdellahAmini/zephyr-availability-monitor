@@ -111,10 +111,7 @@ jobs:
           TELEGRAM_USE_COLOR_EMOJIS: "true"
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          if [ "${{ inputs.cities }}" != "all" ]; then
-            echo "MANUAL_CITIES=${{ inputs.cities }}" >> "$GITHUB_ENV"
-          fi
-
+          export MANUAL_CITIES="${{ inputs.cities }}"
           python tools/manual_scan.py
 
       - name: Upload manual result JSON
